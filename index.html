@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arbeitszeit</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f6fed">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f27;--mu:#6b7280;--bd:#e3e6ec;--ac:#2f6fed;--ok:#1f8f5f;--bad:#c0392b;--r:14px}
+@media (prefers-color-scheme:dark){:root{--bg:#14161a;--card:#1e2127;--tx:#eceef2;--mu:#9aa1ae;--bd:#2d3139;--ac:#6f9bff;--ok:#43c08a;--bad:#ef6a5b}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#app{max-width:640px;margin:0 auto;padding:14px 14px 90px}
+h1{font-size:1.25rem;margin:4px 0 12px}
+h2{font-size:1rem;margin:18px 0 8px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.mu{color:var(--mu);font-size:.85rem}
+.row{display:flex;align-items:center;gap:8px}
+.sp{flex:1}
+button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:9px 13px;cursor:pointer}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+button.dng{color:var(--bad);border-color:var(--bad)}
+button.sm{padding:5px 10px;font-size:.85rem}
+input,select,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:9px 10px;width:100%}
+textarea{min-height:90px;font-size:.8rem;font-family:ui-monospace,Menlo,monospace}
+label{display:block;font-size:.85rem;color:var(--mu);margin:10px 0 4px}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+.tabs div{display:flex;width:100%;max-width:640px}
+.tabs button{flex:1;border:0;border-radius:0;background:none;padding:13px 4px;font-size:.85rem;color:var(--mu)}
+.tabs button.on{color:var(--ac);font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cat{text-align:left;border-left:6px solid var(--c);padding:12px 12px;min-height:62px}
+.cat.run{background:var(--c);color:#fff;border-color:var(--c)}
+.cat b{display:block;font-weight:600;font-size:.95rem}
+.big{font-size:2.3rem;font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:.5px}
+.ent{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--bd)}
+.ent:first-child{border-top:0}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.bar{height:10px;border-radius:6px;background:var(--bd);overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%}
+.cols{display:flex;align-items:flex-end;gap:3px;height:90px;margin-top:8px}
+.cols div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.cols i{width:100%;background:var(--ac);border-radius:4px 4px 0 0;min-height:1px}
+.lbl{display:flex;gap:3px;font-size:.62rem;color:var(--mu)}
+.lbl span{flex:1;text-align:center;overflow:hidden}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1}
+.seg button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.stat{display:flex;gap:10px}
+.stat>div{flex:1;text-align:center}
+.stat b{display:block;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.modal{background:var(--card);width:100%;max-width:640px;border-radius:18px 18px 0 0;padding:16px;max-height:92vh;overflow:auto}
+.toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 15px;border-radius:20px;font-size:.9rem;z-index:20}
+.warn{background:#fff3cd;color:#614a00;border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:.88rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cr{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.slot{border:1px solid var(--bd);border-radius:10px;padding:8px;margin-bottom:8px}
+.sl2{display:grid;grid-template-columns:64px 1fr 1fr auto;gap:6px;margin-top:6px}
+.sl2 input,.sl2 select{padding:7px 6px;font-size:.85rem}
+.cr input[type=color]{width:42px;padding:2px;height:40px;flex:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+const KEY='lehrer-arbeitszeit-v1';
+const PAL=['#2f6fed','#e07a1f','#2a9d6f','#c0392b','#8e5bd0','#d4a017','#16899e','#d6578a','#6b7280'];
+const DEF=['Unterricht','Vor-/Nachbereitung','Korrektur','Konferenz / Sitzung','Elterngespräch','Aufsicht / Vertretung','Fahrten / Exkursionen','Organisation / Verwaltung','Fortbildung'];
+const DAYS=['So','Mo','Di','Mi','Do','Fr','Sa'];
+const MON=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+let storageOk=true;
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+// Stundenplan: wk 0 = jede Woche, 1 = nur in der Referenzwoche (14-tägig), 2 = nur in der Woche dazwischen
+const DEFSLOTS=[
+  [1,'EF BI G4',45,'c0',0],[1,'EF EK G3',45,'c0',0],[1,'Q1 EK L2',90,'c0',0],[1,'Q2 EK G1',45,'c0',0],[1,'Aufsicht (Schulh…)',20,'c5',0],
+  [2,'Q2 EK G1',90,'c0',0],[2,'EF BI G4',90,'c0',0],[2,'10D BI',90,'c0',0],
+  [3,'Aufsicht (2./3. O…)',20,'c5',0],[3,'EF EK G3',90,'c0',0],[3,'05C BI',90,'c0',0],[3,'Q1 EK L2 (14-tägig)',90,'c0',1],[3,'10C EK',45,'c0',0],
+  [4,'05B BI',90,'c0',0],[4,'Bereitschaft',90,'c5',0],[4,'Aufsicht (Schra…)',15,'c5',0],
+  [5,'Q1 EK L2',90,'c0',0],[5,'06B BI',90,'c0',0],[5,'10C EK',45,'c0',0],
+  [1,'7. Stunde (Käthe…)',45,'c0',0]
+].map((a,i)=>({id:'s'+i,wd:a[0],label:a[1],min:a[2],cat:a[3],wk:a[4]}));
+function defaults(){return{cats:DEF.map((n,i)=>({id:'c'+i,name:n,color:PAL[i]})),entries:[],off:[],soll:41,timer:null,plan:{on:false,from:null,lastDone:null,ref:'2026-12-07',slots:DEFSLOTS.map(s=>Object.assign({},s))}}}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&Array.isArray(o.cats)&&Array.isArray(o.entries))return Object.assign(defaults(),o)}}catch(e){}return null}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){storageOk=false}}
+try{localStorage.setItem('_t','1');localStorage.removeItem('_t')}catch(e){storageOk=false}
+let S=load()||defaults();
+let view='heute',modal=null,period={k:'w',o:0},toastT=null,flash='';
+
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const p2=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d,12)};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const today=()=>{const t=new Date();t.setHours(12,0,0,0);return t};
+const dm=d=>p2(d.getDate())+'.'+p2(d.getMonth()+1)+'.';
+function fmt(min){const s=min<0?'−':'';min=Math.abs(Math.round(min));return s+Math.floor(min/60)+':'+p2(min%60)+' h'}
+function kw(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);const y0=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y0)/864e5+1)/7)}
+const cat=id=>S.cats.find(c=>c.id===id)||{id,name:'(entfernt)',color:'#999'};
+const isOff=s=>S.off.includes(s);
+
+// ---- Stundenplan ----
+function weekPar(d){const mon=x=>addDays(x,-((x.getDay()+6)%7));const n=Math.round((mon(d)-mon(parse(S.plan.ref)))/(7*864e5));return((n%2)+2)%2}
+function slotApplies(sl,d){return sl.wk===0||(sl.wk===1&&weekPar(d)===0)||(sl.wk===2&&weekPar(d)===1)}
+function planDay(d){const w=d.getDay();if(w<1||w>5||isOff(ymd(d)))return[];return S.plan.slots.filter(sl=>sl.wd===w&&slotApplies(sl,d))}
+function addPlanDay(d){const s=ymd(d);return planDay(d).map(sl=>{S.entries.push({id:uid(),date:s,cat:sl.cat,min:sl.min,note:sl.label,auto:true})}).length}
+function genPlan(){
+  const P=S.plan;if(!P.on||!P.from)return false;
+  const y=addDays(today(),-1);
+  let st=P.lastDone?addDays(parse(P.lastDone),1):parse(P.from);
+  if(st<parse(P.from))st=parse(P.from);
+  if(st>y)return false;
+  for(let d=new Date(st);d<=y;d=addDays(d,1))addPlanDay(d);
+  P.lastDone=ymd(y);save();return true;
+}
+function planToday(){
+  const P=S.plan;
+  const t=today(),s=ymd(t);if((P.on&&P.from&&P.from>s)||(P.lastDone&&P.lastDone>=s))return null;
+  const l=planDay(t);return l.length?{n:l.length,min:l.reduce((a,x)=>a+x.min,0)}:null;
+}
+function planSum(){const a=S.plan.slots.filter(s=>s.wk!==2).reduce((x,s)=>x+s.min,0),b=S.plan.slots.filter(s=>s.wk!==1).reduce((x,s)=>x+s.min,0);return'Stundenplan pro Woche: '+fmt(a)+' (Woche mit 14-tägigem Kurs) · '+fmt(b)+' (Woche dazwischen)'}
+function planSetFrom(v){
+  const P=S.plan;
+  if(!v){P.on=false;P.from=null;save();toast('Automatik aus');return}
+  P.on=true;P.from=v;
+  const prev=ymd(addDays(parse(v),-1));if(!P.lastDone||P.lastDone<prev)P.lastDone=prev;
+  save();toast(genPlan()?'Unterricht eingetragen':'Automatik ab '+dm(parse(v))+' an');
+}
+function planCard(){
+  const P=S.plan,W=['','Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
+  let h='<div class="card"><b>Stundenplan</b><div class="mu">Der Unterricht wird für jeden vergangenen Schultag automatisch eingetragen (freie Tage ausgenommen). Änderungen machst du danach im Verlauf. 45 Min. = 1 Stunde, 90 Min. = Doppelstunde.</div>';
+  h+='<label>Automatisch eintragen ab (leer = aus)</label><div class="row"><input type="date" id="pfrom" value="'+(P.from||'')+'"><button class="sm" data-a="planfromtoday">Ab heute</button></div>';
+  h+='<label>Eine Woche, in der der 14-tägige Kurs stattfindet (beliebiger Tag)</label><input type="date" id="pref" value="'+P.ref+'">';
+  h+='<div class="mu" style="margin-top:8px" id="psum">'+planSum()+'</div>';
+  for(let wd=1;wd<=5;wd++){
+    h+='<h2>'+W[wd]+'</h2>';
+    P.slots.filter(s=>s.wd===wd).forEach(s=>{
+      h+='<div class="slot"><input data-a="slabel" data-id="'+s.id+'" value="'+esc(s.label)+'"><div class="sl2"><input type="number" min="0" max="600" inputmode="numeric" data-a="smin" data-id="'+s.id+'" value="'+s.min+'">'
+      +'<select data-a="scat" data-id="'+s.id+'">'+S.cats.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===s.cat?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select>'
+      +'<select data-a="swk" data-id="'+s.id+'"><option value="0"'+(s.wk===0?' selected':'')+'>jede Woche</option><option value="1"'+(s.wk===1?' selected':'')+'>alle 2 Wochen (Woche mit)</option><option value="2"'+(s.wk===2?' selected':'')+'>alle 2 Wochen (Woche ohne)</option></select>'
+      +'<button class="sm dng" data-a="sdel" data-id="'+s.id+'">✕</button></div></div>';
+    });
+    h+='<button class="sm" data-a="sadd" data-wd="'+wd+'">+ Eintrag</button>';
+  }
+  return h+'</div>';
+}
+
+function toast(m){const old=document.querySelector('.toast');if(old)old.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2200)}
+
+function startTimer(id){if(S.timer)stopTimer(true);S.timer={cat:id,start:Date.now()};save();render()}
+function stopTimer(silent){
+  if(!S.timer)return;
+  const min=Math.round((Date.now()-S.timer.start)/60000);
+  if(min>=1){S.entries.push({id:uid(),date:ymd(new Date(S.timer.start)),cat:S.timer.cat,min,note:''});if(!silent)toast(fmt(min)+' gespeichert')}
+  else if(!silent)toast('Unter 1 Minute – verworfen');
+  S.timer=null;save();if(!silent)render()
+}
+
+function sumDay(date){return S.entries.filter(e=>e.date===date).reduce((a,e)=>a+e.min,0)}
+function rangeOf(k,o){
+  const t=today();
+  if(k==='w'){const d=addDays(t,o*7);const mon=addDays(d,-((d.getDay()+6)%7));const sun=addDays(mon,6);return{a:mon,b:sun,upTo:sun,label:'KW '+kw(mon)+' · '+dm(mon)+'–'+dm(sun)+mon.getFullYear()}}
+  if(k==='m'){const d=new Date(t.getFullYear(),t.getMonth()+o,1,12);const b=new Date(d.getFullYear(),d.getMonth()+1,0,12);return{a:d,b,upTo:b,label:MON[d.getMonth()]+' '+d.getFullYear()}}
+  const y=t.getMonth()>=7?t.getFullYear():t.getFullYear()-1;
+  return{a:new Date(y+o,7,1,12),b:new Date(y+o+1,6,31,12),upTo:o===0?t:new Date(y+o+1,6,31,12),label:'Schuljahr '+(y+o)+'/'+String(y+o+1).slice(2)}
+}
+function sollMin(a,b,upTo){let n=0;const end=upTo<b?upTo:b;for(let d=new Date(a);d<=end;d=addDays(d,1)){const w=d.getDay();if(w>=1&&w<=5&&!isOff(ymd(d)))n++}return n*S.soll/5*60}
+
+function render(){
+  const app=document.getElementById('app');
+  let h='';
+  if(!storageOk)h+='<div class="warn">Speichern im Browser ist hier nicht möglich – Daten gehen beim Schließen verloren. Sichere sie regelmäßig unter „Mehr“ → Sicherung.</div>';
+  h+= view==='heute'?vHeute():view==='verlauf'?vVerlauf():view==='auswertung'?vAus():vMehr();
+  h+='<div class="tabs"><div>'+[['heute','Heute'],['verlauf','Verlauf'],['auswertung','Auswertung'],['mehr','Mehr']].map(([k,n])=>'<button data-a="tab" data-v="'+k+'" class="'+(view===k?'on':'')+'">'+n+'</button>').join('')+'</div></div>';
+  if(modal)h+=vModal();
+  app.innerHTML=h;
+  tick();
+}
+
+function vHeute(){
+  const t=ymd(new Date());const tot=sumDay(t)+(S.timer?Math.floor((Date.now()-S.timer.start)/60000):0);
+  const d=new Date();
+  let h='<h1>'+DAYS[d.getDay()]+', '+dm(d)+d.getFullYear()+'</h1>';
+  if(S.timer){const c=cat(S.timer.cat);h+='<div class="card" style="border-left:6px solid '+c.color+'"><div class="mu">Läuft: '+esc(c.name)+'</div><div class="big" id="clk">0:00:00</div><div class="row" style="margin-top:8px"><button class="pri" data-a="stop">Stopp &amp; speichern</button><button data-a="discard">Verwerfen</button></div></div>'}
+  h+='<div class="row" style="margin-bottom:10px"><div class="mu sp">Heute gesamt: <b style="color:var(--tx)" id="tot">'+fmt(tot)+'</b></div><button class="sm" data-a="new">+ Nachtragen</button></div>';
+  const pt=planToday();
+  if(pt)h+='<div class="card"><div class="row"><div class="sp"><b>Stundenplan heute</b><div class="mu">'+pt.n+' Einträge · '+fmt(pt.min)+'</div></div><button class="pri" data-a="plantoday">Eintragen</button></div></div>';
+  h+='<div class="grid">'+S.cats.map(c=>{const m=S.entries.filter(e=>e.date===t&&e.cat===c.id).reduce((a,e)=>a+e.min,0);const run=S.timer&&S.timer.cat===c.id;return'<button class="cat'+(run?' run':'')+'" style="--c:'+c.color+'" data-a="start" data-id="'+esc(c.id)+'"><b>'+esc(c.name)+'</b><span class="'+(run?'':'mu')+'" style="font-size:.8rem">'+(m?fmt(m)+' heute':'Tippen zum Starten')+'</span></button>'}).join('')+'</div>';
+  const es=S.entries.filter(e=>e.date===t);
+  if(es.length){h+='<h2>Einträge heute</h2><div class="card">'+es.slice().reverse().map(entRow).join('')+'</div>'}
+  return h;
+}
+function entRow(e){const c=cat(e.cat);return'<div class="ent" data-a="edit" data-id="'+e.id+'"><span class="dot" style="background:'+c.color+'"></span><div class="sp"><div>'+esc(c.name)+'</div>'+(e.note?'<div class="mu">'+esc(e.note)+'</div>':'')+'</div><b>'+fmt(e.min)+'</b></div>'}
+
+function vVerlauf(){
+  const dates=[...new Set(S.entries.map(e=>e.date).concat(S.off))].sort().reverse().slice(0,120);
+  let h='<h1>Verlauf</h1><div class="row" style="margin-bottom:10px"><span class="mu sp">Tippe einen Eintrag zum Bearbeiten.</span><button class="sm" data-a="new">+ Nachtragen</button></div>';
+  if(!dates.length)return h+'<div class="card mu">Noch keine Einträge.</div>';
+  dates.forEach(ds=>{const d=parse(ds);const es=S.entries.filter(e=>e.date===ds);h+='<div class="card"><div class="row"><b class="sp">'+DAYS[d.getDay()]+', '+dm(d)+d.getFullYear()+(isOff(ds)?' <span class="mu">· frei</span>':'')+'</b><b>'+fmt(sumDay(ds))+'</b></div>'+es.map(entRow).join('')+'</div>'});
+  return h;
+}
+
+function vAus(){
+  const r=rangeOf(period.k,period.o);
+  const a=ymd(r.a),b=ymd(r.b);
+  const es=S.entries.filter(e=>e.date>=a&&e.date<=b);
+  const ist=es.reduce((s,e)=>s+e.min,0);
+  const soll=sollMin(r.a,r.b,r.upTo);
+  const saldo=ist-soll;
+  let h='<h1>Auswertung</h1><div class="seg">'+[['w','Woche'],['m','Monat'],['s','Schuljahr']].map(([k,n])=>'<button data-a="per" data-k="'+k+'" class="'+(period.k===k?'on':'')+'">'+n+'</button>').join('')+'</div>';
+  h+='<div class="row" style="margin-bottom:10px"><button class="sm" data-a="prev">‹</button><b class="sp" style="text-align:center">'+esc(r.label)+'</b><button class="sm" data-a="next">›</button></div>';
+  h+='<div class="card"><div class="stat"><div><span class="mu">Ist</span><b>'+fmt(ist)+'</b></div><div><span class="mu">Soll</span><b>'+fmt(soll)+'</b></div><div><span class="mu">Saldo</span><b class="'+(saldo>=0?'pos':'neg')+'">'+(saldo>0?'+':'')+fmt(saldo)+'</b></div></div>'+(period.k==='s'&&period.o===0?'<div class="mu" style="margin-top:8px;text-align:center">Soll gerechnet bis heute, ohne freie Tage.</div>':'')+'</div>';
+  // Balken je Zeitabschnitt
+  let bk=[];
+  if(period.k==='s'){for(let i=0;i<12;i++){const d=new Date(r.a.getFullYear(),7+i,1,12);const f=ymd(d),l=ymd(new Date(d.getFullYear(),d.getMonth()+1,0,12));bk.push({l:MON[d.getMonth()].slice(0,3),v:S.entries.filter(e=>e.date>=f&&e.date<=l).reduce((s,e)=>s+e.min,0)})}}
+  else{for(let d=new Date(r.a);d<=r.b;d=addDays(d,1)){const s=ymd(d);bk.push({l:period.k==='w'?DAYS[d.getDay()]:(d.getDate()%5===1||d.getDate()===1?String(d.getDate()):''),v:sumDay(s)})}}
+  const mx=Math.max(1,...bk.map(x=>x.v));
+  h+='<div class="card"><b>Verlauf</b><div class="cols">'+bk.map(x=>'<div title="'+fmt(x.v)+'"><i style="height:'+Math.round(x.v/mx*100)+'%"></i></div>').join('')+'</div><div class="lbl">'+bk.map(x=>'<span>'+x.l+'</span>').join('')+'</div></div>';
+  // je Kategorie
+  const by={};es.forEach(e=>by[e.cat]=(by[e.cat]||0)+e.min);
+  const list=Object.keys(by).map(id=>({c:cat(id),v:by[id]})).sort((x,y)=>y.v-x.v);
+  h+='<div class="card"><b>Nach Tätigkeit</b>';
+  if(!list.length)h+='<div class="mu" style="margin-top:6px">Keine Einträge in diesem Zeitraum.</div>';
+  list.forEach(x=>{h+='<div style="margin-top:10px"><div class="row"><span class="dot" style="background:'+x.c.color+'"></span><span class="sp">'+esc(x.c.name)+'</span><b>'+fmt(x.v)+'</b><span class="mu" style="width:42px;text-align:right">'+Math.round(x.v/ist*100)+' %</span></div><div class="bar"><i style="width:'+Math.round(x.v/list[0].v*100)+'%;background:'+x.c.color+'"></i></div></div>'});
+  return h+'</div>';
+}
+
+function offRanges(){
+  const ds=S.off.slice().sort();const out=[];
+  ds.forEach(s=>{const l=out[out.length-1];if(l&&ymd(addDays(parse(l.b),1))===s)l.b=s;else out.push({a:s,b:s})});
+  return out;
+}
+function vMehr(){
+  const tdy=ymd(new Date());
+  let h='<h1>Mehr</h1>';
+  h+='<div class="card"><b>Soll-Arbeitszeit</b><label>Wochenstunden (bitte für dein Bundesland/deine Stelle prüfen)</label><input type="number" step="0.5" min="0" id="soll" value="'+S.soll+'"><div class="mu" style="margin-top:6px">Wird gleichmäßig auf Mo–Fr verteilt.</div></div>';
+  h+=planCard();
+  h+='<div class="card"><b>Tätigkeiten</b><div style="margin-top:10px">'+S.cats.map((c,i)=>'<div class="cr"><input type="color" data-a="ccol" data-i="'+i+'" value="'+c.color+'"><input data-a="cname" data-i="'+i+'" value="'+esc(c.name)+'"><button class="sm dng" data-a="cdel" data-i="'+i+'">✕</button></div>').join('')+'</div><button data-a="cadd">+ Tätigkeit hinzufügen</button><div class="mu" style="margin-top:6px">Bereits erfasste Zeiten bleiben beim Löschen erhalten (als „entfernt“).</div></div>';
+  h+='<div class="card"><b>Freie Tage (Ferien, Urlaub, krank)</b><div class="mu">Für diese Tage zählt kein Soll.</div><div class="two"><div><label>Von</label><input type="date" id="offa" value="'+tdy+'"></div><div><label>Bis</label><input type="date" id="offb" value="'+tdy+'"></div></div><button style="margin-top:10px" data-a="offadd">Hinzufügen</button>'+offRanges().reverse().slice(0,20).map(r=>'<div class="ent"><span class="sp">'+(r.a===r.b?dm(parse(r.a))+parse(r.a).getFullYear():dm(parse(r.a))+parse(r.a).getFullYear()+' – '+dm(parse(r.b))+parse(r.b).getFullYear())+'</span><button class="sm" data-a="offdel" data-a1="'+r.a+'" data-b1="'+r.b+'">Entfernen</button></div>').join('')+'</div>';
+  h+='<div class="card"><b>Sicherung</b><div class="mu">Deine Daten liegen nur in diesem Browser. Kopiere die Sicherung hin und wieder in eine Notiz.</div><label>Sicherung (Text)</label><textarea id="bk" readonly>'+esc(JSON.stringify(S))+'</textarea><div class="row" style="margin-top:8px"><button data-a="copybk">Sicherung kopieren</button><button data-a="copycsv">Als CSV kopieren</button></div><label>Sicherung einfügen &amp; wiederherstellen</label><textarea id="imp" placeholder="Hier den kopierten Sicherungstext einfügen"></textarea><button style="margin-top:8px" class="dng" data-a="import">Wiederherstellen (ersetzt alle Daten)</button></div>';
+  return h;
+}
+
+function vModal(){
+  const m=modal;
+  return'<div class="ov" data-a="ovclose"><div class="modal"><div class="row"><b class="sp">'+(m.id?'Eintrag bearbeiten':'Zeit nachtragen')+'</b><button class="sm" data-a="mclose">Schließen</button></div>'
+  +'<label>Datum</label><input type="date" id="m_date" value="'+m.date+'">'
+  +'<label>Tätigkeit</label><select id="m_cat">'+S.cats.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===m.cat?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select>'
+  +'<div class="two"><div><label>Stunden</label><input type="number" min="0" max="24" inputmode="numeric" id="m_h" value="'+m.h+'"></div><div><label>Minuten</label><input type="number" min="0" max="59" inputmode="numeric" id="m_m" value="'+m.m+'"></div></div>'
+  +'<label>Notiz (optional)</label><input id="m_note" value="'+esc(m.note)+'" placeholder="z. B. Klausur 9b, Elternsprechtag">'
+  +'<div class="row" style="margin-top:14px"><button class="pri sp" data-a="msave">Speichern</button>'+(m.id?'<button class="dng" data-a="mdel">'+(m.cd?'Wirklich löschen?':'Löschen')+'</button>':'')+'</div></div></div>';
+}
+
+function tick(){
+  const c=document.getElementById('clk');
+  if(c&&S.timer){const s=Math.max(0,Math.floor((Date.now()-S.timer.start)/1000));c.textContent=Math.floor(s/3600)+':'+p2(Math.floor(s%3600/60))+':'+p2(s%60);const t=document.getElementById('tot');if(t)t.textContent=fmt(sumDay(ymd(new Date()))+Math.floor(s/60))}
+}
+setInterval(tick,1000);
+
+function csv(){
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  return['Datum;Tätigkeit;Minuten;Stunden;Notiz'].concat(S.entries.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0).map(e=>[e.date,q(cat(e.cat).name),e.min,(e.min/60).toFixed(2).replace('.',','),q(e.note||'')].join(';'))).join('\n');
+}
+async function copy(text,id){
+  try{await navigator.clipboard.writeText(text);toast('Kopiert')}
+  catch(e){const t=document.getElementById(id);if(t){t.readOnly=false;t.select();t.readOnly=true}toast('Bitte Text markieren und manuell kopieren')}
+}
+
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-a]');if(!el)return;
+  const a=el.dataset.a;
+  switch(a){
+    case'tab':view=el.dataset.v;modal=null;render();window.scrollTo(0,0);break;
+    case'start':startTimer(el.dataset.id);break;
+    case'stop':stopTimer();break;
+    case'discard':S.timer=null;save();render();toast('Verworfen');break;
+    case'new':modal={id:null,date:ymd(new Date()),cat:S.cats[0]&&S.cats[0].id,h:'',m:'',note:''};render();break;
+    case'edit':{const en=S.entries.find(x=>x.id===el.dataset.id);if(en){modal={id:en.id,date:en.date,cat:en.cat,h:Math.floor(en.min/60),m:en.min%60,note:en.note||'',cd:false};render()}break}
+    case'mclose':case'ovclose':if(a==='ovclose'&&e.target!==el)break;modal=null;render();break;
+    case'msave':{
+      const date=document.getElementById('m_date').value;
+      const c=document.getElementById('m_cat').value;
+      const hh=parseInt(document.getElementById('m_h').value)||0,mm=parseInt(document.getElementById('m_m').value)||0;
+      const note=document.getElementById('m_note').value.trim();
+      const min=hh*60+mm;
+      if(!date||!c||min<=0){toast('Bitte Datum und eine Dauer angeben');break}
+      if(modal.id){const en=S.entries.find(x=>x.id===modal.id);if(en){en.date=date;en.cat=c;en.min=min;en.note=note}}
+      else S.entries.push({id:uid(),date,cat:c,min,note});
+      save();modal=null;render();toast('Gespeichert');break}
+    case'mdel':
+      if(!modal.cd){modal.cd=true;modal.date=document.getElementById('m_date').value;modal.cat=document.getElementById('m_cat').value;modal.h=document.getElementById('m_h').value;modal.m=document.getElementById('m_m').value;modal.note=document.getElementById('m_note').value;render();break}
+      S.entries=S.entries.filter(x=>x.id!==modal.id);save();modal=null;render();toast('Gelöscht');break;
+    case'per':period={k:el.dataset.k,o:0};render();break;
+    case'prev':period.o--;render();break;
+    case'next':period.o++;render();break;
+    case'cadd':S.cats.push({id:'c'+uid(),name:'Neue Tätigkeit',color:PAL[S.cats.length%PAL.length]});save();render();break;
+    case'cdel':if(S.cats.length<=1){toast('Mindestens eine Tätigkeit nötig');break}
+      if(S.timer&&S.timer.cat===S.cats[+el.dataset.i].id){toast('Erst den laufenden Timer stoppen');break}
+      S.cats.splice(+el.dataset.i,1);save();render();break;
+    case'offadd':{
+      const x=document.getElementById('offa').value,y=document.getElementById('offb').value;
+      if(!x||!y||y<x){toast('Bitte gültigen Zeitraum wählen');break}
+      for(let d=parse(x);d<=parse(y);d=addDays(d,1)){const s=ymd(d);if(!S.off.includes(s))S.off.push(s)}
+      save();render();toast('Eingetragen');break}
+    case'offdel':{
+      const x=el.dataset.a1,y=el.dataset.b1;
+      S.off=S.off.filter(s=>s<x||s>y);save();render();break}
+    case'plantoday':{const t=today();addPlanDay(t);S.plan.lastDone=ymd(t);save();render();toast('Unterricht eingetragen');break}
+    case'planfromtoday':planSetFrom(ymd(new Date()));render();break;
+    case'sadd':S.plan.slots.push({id:uid(),wd:+el.dataset.wd,label:'Neu',min:45,cat:S.cats[0].id,wk:0});save();render();break;
+    case'sdel':S.plan.slots=S.plan.slots.filter(s=>s.id!==el.dataset.id);save();render();break;
+    case'copybk':copy(JSON.stringify(S),'bk');break;
+    case'copycsv':copy(csv(),'bk');break;
+    case'import':{
+      const t=document.getElementById('imp').value.trim();
+      try{const o=JSON.parse(t);if(!o||!Array.isArray(o.cats)||!Array.isArray(o.entries))throw 0;S=Object.assign(defaults(),o);save();render();toast('Wiederhergestellt')}
+      catch(err){toast('Das ist keine gültige Sicherung')}
+      break}
+  }
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.id==='soll'){const v=parseFloat(String(el.value).replace(',','.'));if(v>=0&&v<=80){S.soll=v;save();toast('Gespeichert')}}
+  else if(el.dataset&&el.dataset.a==='cname'){const v=el.value.trim();if(v){S.cats[+el.dataset.i].name=v;save()}}
+  else if(el.dataset&&el.dataset.a==='ccol'){S.cats[+el.dataset.i].color=el.value;save()}
+  else if(el.id==='pfrom'){planSetFrom(el.value)}
+  else if(el.id==='pref'){if(el.value){S.plan.ref=el.value;save();toast('Gespeichert')}}
+  else if(el.dataset&&['slabel','smin','scat','swk'].includes(el.dataset.a)){
+    const s=S.plan.slots.find(x=>x.id===el.dataset.id);
+    if(s){const k=el.dataset.a;
+      if(k==='slabel')s.label=el.value.trim()||s.label;
+      else if(k==='smin')s.min=Math.max(0,Math.min(600,parseInt(el.value)||0));
+      else if(k==='scat')s.cat=el.value;
+      else s.wk=parseInt(el.value);
+      save();const p=document.getElementById('psum');if(p)p.textContent=planSum()}
+  }
+});
+// Laufenden Timer auch nach App-Wechsel korrekt anzeigen
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(genPlan())render();tick()}});
+genPlan();
+render();
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){try{navigator.serviceWorker.register('sw.js').catch(function(){})}catch(e){}}
+})();
+</script>
+</body>
+</html>
